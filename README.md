@@ -32,4 +32,4 @@ npx prisma studio
 ```
 
 💡 O Prisma Studio abrirá automaticamente em:  
-🔗 [http://localhost:5555](http://localhost:5555)# backend_varos
+🔗 [http://localhost:5555](http://localhost:5555)
