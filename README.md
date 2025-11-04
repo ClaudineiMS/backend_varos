@@ -1,23 +1,31 @@
-## **Prisma ORM**
+# Backend Prisma ORM
 
-Backend simples feito com prisma ORM para o desafio técnico
+Este é um **backend simples** feito com **Prisma ORM**, criado como parte de um desafio técnico. Ele utiliza um banco de dados **SQLite** e fornece endpoints básicos para manipulação de usuários.
 
-- **`DATABASE_URL="file:./dev.db"`**
-  É um banco de dados sqllite
+---
 
-### Prisma Studio
+## Configuração do Banco de Dados
 
-Para visualizar e editar os dados através de uma interface gráfica, execute:
+No arquivo `.env`
 
-**Passo 1:** Vá até o diretório do backend
+```env
+DATABASE_URL="file:./dev.db"
+```
 
-Versão do node utilizada: v24.11.0
+**Node:** v24.11.0
 
+
+**Instalando**
 ```bash
 npm i
 ```
 
-**Passo 2:** Execute o comando:
+**Modo de desenvolvimento**
+```bash
+npm run dev
+```
+
+**prisma studio:**
 
 ```bash
 npx prisma studio
