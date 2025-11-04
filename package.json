@@ -1,0 +1,23 @@
+{
+  "name": "backend-prisma",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node src/server.js",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.18.0",
+    "body-parser": "^2.2.0",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.5",
+    "prisma": "^6.18.0",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.2.2"
+  }
+}
