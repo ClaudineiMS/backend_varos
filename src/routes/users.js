@@ -1,4 +1,3 @@
-// routes/users.js
 import { Router } from "express";
 import { PrismaClient } from "@prisma/client";
 
@@ -37,10 +36,64 @@ router.post("/create", async (req, res) => {
 });
 
 // READ ALL
-router.get("/", async (_req, res) => {
-  const users = await prisma.user.findMany();
-  res.json(users);
+router.get("/", async (req, res) => {
+  const { nome, email, data } = req.query;
+
+  const where = {};
+
+  // Filtro por nome
+  if (nome) {
+    where.OR = [
+      { nome: { contains: nome } },
+      { nome: { contains: nome.toLowerCase() } },
+      { nome: { contains: nome.toUpperCase() } },
+    ];
+  }
+
+  // Filtro por email
+  if (email) {
+    where.AND = [
+      ...(where.AND || []),
+      {
+        OR: [
+          { email: { contains: email } },
+          { email: { contains: email.toLowerCase() } },
+          { email: { contains: email.toUpperCase() } },
+        ],
+      },
+    ];
+  }
+
+  // Filtro por data
+  if (data) {
+    const start = new Date(data);
+    const end = new Date(data);
+    end.setDate(end.getDate() + 1);
+
+    where.AND = [
+      ...(where.AND || []),
+      {
+        criadoEm: {
+          gte: start,
+          lt: end,
+        },
+      },
+    ];
+  }
+
+  try {
+    const users = await prisma.user.findMany({
+      where,
+      include: { clients: true },
+      orderBy: { criadoEm: "desc" },
+    });
+
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
+
 
 // COUNT USERS (últimos 7 dias)
 router.get("/count", async (_req, res) => {
