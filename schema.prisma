@@ -9,12 +9,23 @@ datasource db {
 
 model User {
   id           Int      @id @default(autoincrement())
+  tipoUsuario  String
   nome         String
   email        String   @unique
   telefone     String
   cpf          String   @unique
   idade        Int
   endereco     String
+  clients      Client[]
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 }
+
+model Client {
+  id           Int      @id @default(autoincrement())
+  nome         String
+  consultor    User     @relation(fields: [consultorId], references: [id])
+  consultorId  Int
+}
+
+

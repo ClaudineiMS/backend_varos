@@ -6,13 +6,31 @@ const router = Router();
 const prisma = new PrismaClient();
 
 // CREATE
-router.post("/", async (req, res) => {
+router.post("/create", async (req, res) => {
+  const { tipoUsuario, nome, email, telefone, cpf, idade, endereco, clients } = req.body;
+
   try {
-    const { nome, email, telefone, cpf, idade, endereco } = req.body;
     const user = await prisma.user.create({
-      data: { nome, email, telefone, cpf, idade, endereco },
+      data: {
+        tipoUsuario,
+        nome,
+        email,
+        telefone,
+        cpf,
+        idade,
+        endereco,
+        clients: tipoUsuario === "Consultor" && clients?.length
+          ? {
+              create: clients.map((c) => ({ nome: c })),
+            }
+          : undefined,
+      },
+      include: {
+        clients: true,
+      },
     });
-    res.status(201).json(user);
+
+    res.json({ success: true, user });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
