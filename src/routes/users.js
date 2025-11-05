@@ -24,6 +24,27 @@ router.get("/", async (_req, res) => {
   res.json(users);
 });
 
+// COUNT USERS (últimos 7 dias)
+router.get("/count", async (_req, res) => {
+  try {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const total = await prisma.user.count();
+    const last7Days = await prisma.user.count({
+      where: {
+        criadoEm: {
+          gte: sevenDaysAgo,
+        },
+      },
+    });
+
+    res.json({ total, last7Days });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // READ ONE
 router.get("/:id", async (req, res) => {
   const id = Number(req.params.id);
