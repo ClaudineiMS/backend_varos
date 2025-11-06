@@ -4,11 +4,52 @@ import { PrismaClient } from "@prisma/client";
 const router = Router();
 const prisma = new PrismaClient();
 
-// CREATE
-router.post("/create", async (req, res) => {
-  const { tipoUsuario, nome, email, telefone, cpf, idade, endereco, clients } = req.body;
 
+//CREATE CONSULTOR
+router.post("/consultores", async (req, res) => {
   try {
+    const { nome, email, telefone, clients } = req.body;
+
+    if (!nome || !email || !telefone) {
+      return res.status(400).json({ error: "Campos obrigatórios faltando." });
+    }
+
+    const consultor = await prisma.user.create({
+      data: {
+        tipoUsuario: "Consultor",
+        nome,
+        email,
+        telefone,
+        clients: clients?.length
+          ? {
+              create: clients.map((c) => ({
+                nome: typeof c === "string" ? c : c.nome,
+              })),
+            }
+          : undefined,
+      },
+      include: { clients: true },
+    });
+
+    res.status(201).json({ success: true, consultor });
+  } catch (err) {
+    if (err.code === "P2002") {
+      const field = err.meta?.target?.join(", ");
+      return res.status(409).json({
+        error: `Já existe um registro com o mesmo valor para o campo: ${field}.`,
+      });
+    }
+
+    console.error("Erro ao criar consultor:", err);
+    res.status(500).json({ error: err.message });
+  }
+})
+
+// CREATE USER
+router.post("/create", async (req, res) => {
+  try {
+    const { tipoUsuario, nome, email, telefone, cpf, idade, endereco, clients } = req.body;
+
     const user = await prisma.user.create({
       data: {
         tipoUsuario,
@@ -16,32 +57,33 @@ router.post("/create", async (req, res) => {
         email,
         telefone,
         cpf,
-        idade,
+        idade: Number(idade),
         endereco,
-        clients: tipoUsuario === "Consultor" && clients?.length
+        ...(tipoUsuario === "Consultor" && clients?.length
           ? {
-              create: clients.map((c) => ({ nome: c })),
+              clients: {
+                create: clients.map((c) => ({
+                  nome: typeof c === "string" ? c : c.nome,
+                })),
+              },
             }
-          : undefined,
+          : {}),
       },
-      include: {
-        clients: true,
-      },
+      include: { clients: true },
     });
 
-    res.json({ success: true, user });
+    res.status(201).json({ success: true, user });
   } catch (err) {
+    console.error("Erro ao criar usuário:", err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// READ ALL
+// READ ALL USERS
 router.get("/", async (req, res) => {
   const { nome, email, data } = req.query;
-
   const where = {};
 
-  // Filtro por nome
   if (nome) {
     where.OR = [
       { nome: { contains: nome } },
@@ -50,7 +92,6 @@ router.get("/", async (req, res) => {
     ];
   }
 
-  // Filtro por email
   if (email) {
     where.AND = [
       ...(where.AND || []),
@@ -64,20 +105,13 @@ router.get("/", async (req, res) => {
     ];
   }
 
-  // Filtro por data
   if (data) {
     const start = new Date(data);
     const end = new Date(data);
     end.setDate(end.getDate() + 1);
-
     where.AND = [
       ...(where.AND || []),
-      {
-        criadoEm: {
-          gte: start,
-          lt: end,
-        },
-      },
+      { criadoEm: { gte: start, lt: end } },
     ];
   }
 

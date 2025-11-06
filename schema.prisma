@@ -13,13 +13,15 @@ model User {
   nome         String
   email        String   @unique
   telefone     String
-  cpf          String   @unique
-  idade        Int
-  endereco     String
+  cpf          String?  @unique   
+  idade        Int?      
+  endereco     String?          
   clients      Client[]
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 }
+
+
 
 model Client {
   id           Int      @id @default(autoincrement())
