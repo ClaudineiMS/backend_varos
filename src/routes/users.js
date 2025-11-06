@@ -141,29 +141,49 @@ router.get("/count", async (_req, res) => {
 
 
 router.get("/clients-by-consultor", async (req, res) => {
-  const { nome, email, data } = req.query;
+  const { nome, email: emailConsultor, data } = req.query;
 
   try {
-    if (!nome) return res.status(400).json({ error: "Nome do consultor é obrigatório" });
+    let nomesClientes = [];
 
-    
-    const consultorRecord = await prisma.client.findFirst({
-      where: { nome: { equals: String(nome) } },
-    });
+    if (nome) {
+      const consultorRecord = await prisma.client.findFirst({
+        where: { nome: { equals: String(nome) } },
+      });
 
-    if (!consultorRecord) return res.json([]);
+      if (!consultorRecord) return res.json([]);
 
-    const nomesClientes = Array.isArray(consultorRecord.Clientes)
-      ? consultorRecord.Clientes
-      : [];
+      nomesClientes = Array.isArray(consultorRecord.Clientes)
+        ? consultorRecord.Clientes
+        : [];
 
-    if (nomesClientes.length === 0) return res.json([]);
+      if (nomesClientes.length === 0 && !emailConsultor && !data) return res.json([]);
+    }
 
-    const where = {
-      nome: { in: nomesClientes }
-    };
+    if (emailConsultor) {
+      const consultorRecord = await prisma.client.findFirst({
+        where: { email: { equals: String(emailConsultor) } },
+      });
 
-    if (email) where.email = { contains: String(email) };
+      if (!consultorRecord) return res.json([]);
+
+      const clientesDoEmail = Array.isArray(consultorRecord.Clientes)
+        ? consultorRecord.Clientes
+        : [];
+
+      nomesClientes = nomesClientes.length > 0
+        ? nomesClientes.filter((c) => clientesDoEmail.includes(c))
+        : clientesDoEmail;
+
+      if (nomesClientes.length === 0 && !nome && !data) return res.json([]);
+    }
+
+    const where = {};
+
+    if (nomesClientes.length > 0) {
+      where.nome = { in: nomesClientes };
+    }
+
     if (data) {
       const start = new Date(String(data));
       const end = new Date(start);
@@ -179,6 +199,7 @@ router.get("/clients-by-consultor", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 
 
