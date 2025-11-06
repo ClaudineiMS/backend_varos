@@ -82,7 +82,9 @@ router.post("/create", async (req, res) => {
 // READ ALL USERS
 router.get("/", async (req, res) => {
   const { nome, email, data } = req.query;
-  const where = {};
+  const where = {
+    NOT: { tipoUsuario: "Consultor" }
+  };
 
   if (nome) {
     where.OR = [
