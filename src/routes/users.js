@@ -200,9 +200,6 @@ router.get("/clients-by-consultor", async (req, res) => {
   }
 });
 
-
-
-
 // READ ONE
 router.get("/:id", async (req, res) => {
   const id = Number(req.params.id);
@@ -227,15 +224,19 @@ router.put("/:id", async (req, res) => {
 });
 
 // DELETE
-router.delete("/:id", async (req, res) => {
-  const id = Number(req.params.id);
+router.delete("/:cpf", async (req, res) => {
+  const cpf = String(req.params.cpf);
   try {
-    await prisma.user.delete({ where: { id } });
-    res.status(204).send();
+    const deletedUser = await prisma.user.delete({
+      where: { cpf },
+    });
+    res.status(200).json({ message: "Usuário deletado com sucesso", deletedUser });
   } catch (err) {
+    if (err.code === "P2025") {
+      return res.status(404).json({ error: "Usuário não encontrado" });
+    }
     res.status(500).json({ error: err.message });
   }
 });
-
 
 export default router;
