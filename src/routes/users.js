@@ -5,7 +5,7 @@ const router = Router();
 const prisma = new PrismaClient();
 
 
-//CREATE CONSULTOR
+// CREATE CONSULTOR (na tabela Client)
 router.post("/consultores", async (req, res) => {
   try {
     const { nome, email, telefone, clients } = req.body;
@@ -14,36 +14,22 @@ router.post("/consultores", async (req, res) => {
       return res.status(400).json({ error: "Campos obrigatórios faltando." });
     }
 
-    const consultor = await prisma.user.create({
+    const consultor = await prisma.client.create({
       data: {
-        tipoUsuario: "Consultor",
         nome,
         email,
         telefone,
-        clients: clients?.length
-          ? {
-              create: clients.map((c) => ({
-                nome: typeof c === "string" ? c : c.nome,
-              })),
-            }
-          : undefined,
+        tipoUsuario: "Consultor",
+        Clientes: clients || [], 
       },
-      include: { clients: true },
     });
 
     res.status(201).json({ success: true, consultor });
   } catch (err) {
-    if (err.code === "P2002") {
-      const field = err.meta?.target?.join(", ");
-      return res.status(409).json({
-        error: `Já existe um registro com o mesmo valor para o campo: ${field}.`,
-      });
-    }
-
     console.error("Erro ao criar consultor:", err);
     res.status(500).json({ error: err.message });
   }
-})
+});
 
 // CREATE USER
 router.post("/create", async (req, res) => {
@@ -68,8 +54,7 @@ router.post("/create", async (req, res) => {
               },
             }
           : {}),
-      },
-      include: { clients: true },
+      }
     });
 
     res.status(201).json({ success: true, user });
@@ -120,7 +105,6 @@ router.get("/", async (req, res) => {
   try {
     const users = await prisma.user.findMany({
       where,
-      include: { clients: true },
       orderBy: { criadoEm: "desc" },
     });
 
@@ -131,18 +115,21 @@ router.get("/", async (req, res) => {
 });
 
 
-// COUNT USERS (últimos 7 dias)
+// COUNT CLIENTS (últimos 7 dias)
 router.get("/count", async (_req, res) => {
   try {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    const total = await prisma.user.count();
+    
+    const total = await prisma.user.count({
+      where: { tipoUsuario: "Cliente" },
+    });
+
     const last7Days = await prisma.user.count({
       where: {
-        criadoEm: {
-          gte: sevenDaysAgo,
-        },
+        tipoUsuario: "Cliente",
+        criadoEm: { gte: sevenDaysAgo },
       },
     });
 
@@ -151,6 +138,49 @@ router.get("/count", async (_req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+
+router.get("/clients-by-consultor", async (req, res) => {
+  const { nome, email, data } = req.query;
+
+  try {
+    if (!nome) return res.status(400).json({ error: "Nome do consultor é obrigatório" });
+
+    
+    const consultorRecord = await prisma.client.findFirst({
+      where: { nome: { equals: String(nome) } },
+    });
+
+    if (!consultorRecord) return res.json([]);
+
+    const nomesClientes = Array.isArray(consultorRecord.Clientes)
+      ? consultorRecord.Clientes
+      : [];
+
+    if (nomesClientes.length === 0) return res.json([]);
+
+    const where = {
+      nome: { in: nomesClientes }
+    };
+
+    if (email) where.email = { contains: String(email) };
+    if (data) {
+      const start = new Date(String(data));
+      const end = new Date(start);
+      end.setDate(end.getDate() + 1);
+      where.criadoEm = { gte: start, lt: end };
+    }
+
+    const users = await prisma.user.findMany({ where });
+
+    res.json(users);
+  } catch (err) {
+    console.error("Erro na busca de clientes por consultor:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 
 // READ ONE
 router.get("/:id", async (req, res) => {
@@ -186,5 +216,5 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-// Export default (isso é crucial para ES Modules)
+
 export default router;
