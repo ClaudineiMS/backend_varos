@@ -200,25 +200,56 @@ router.get("/clients-by-consultor", async (req, res) => {
   }
 });
 
-// READ ONE
-router.get("/:id", async (req, res) => {
-  const id = Number(req.params.id);
-  const user = await prisma.user.findUnique({ where: { id } });
-  if (!user) return res.status(404).json({ error: "User not found" });
-  res.json(user);
-});
+// READ ONE USER BY CPF
+router.get("/cpf/:cpf", async (req, res) => {
+  const cpf = String(req.params.cpf);
 
-// UPDATE
-router.put("/:id", async (req, res) => {
-  const id = Number(req.params.id);
-  const { nome, email, telefone, cpf, idade, endereco } = req.body;
   try {
-    const user = await prisma.user.update({
-      where: { id },
-      data: { nome, email, telefone, cpf, idade, endereco },
+    const user = await prisma.user.findUnique({
+      where: { cpf },
     });
+
+    if (!user) return res.status(404).json({ error: "Usuário não encontrado" });
+
     res.json(user);
   } catch (err) {
+    console.error("Erro ao buscar usuário por CPF:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// UPDATE USER BY CPF
+router.put("/cpf/:cpf", async (req, res) => {
+  const cpf = String(req.params.cpf);
+  const { nome, email, telefone, idade, endereco, tipoUsuario, clients } = req.body;
+
+  try {
+    const user = await prisma.user.update({
+      where: { cpf },
+      data: {
+        nome,
+        email,
+        telefone,
+        idade: idade ? Number(idade) : undefined,
+        endereco,
+        tipoUsuario,
+        ...(tipoUsuario === "Consultor" && clients?.length
+          ? {
+              clients: {
+                deleteMany: {}, // remove clientes antigos
+                create: clients.map((c) => ({ nome: c })),
+              },
+            }
+          : {}),
+      },
+    });
+
+    res.json(user);
+  } catch (err) {
+    if (err.code === "P2025") {
+      return res.status(404).json({ error: "Usuário não encontrado" });
+    }
+    console.error("Erro ao atualizar usuário por CPF:", err);
     res.status(500).json({ error: err.message });
   }
 });
